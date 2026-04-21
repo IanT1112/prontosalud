@@ -2,6 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,13 +14,40 @@ import {
   View,
 } from "react-native";
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
 export default function LoginScreen() {
   const router = useRouter();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const isDisabled = email.trim() === "" || password.trim() === "";
+
+  const handleLogin = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Guardamos token y rol en variables globales simples
+        global.token = data.token;
+        global.rol = data.rol;
+        global.nombre = data.nombre;
+        if (data.rol === "ambulancia") {
+          router.replace("/homeambulance");
+        } else {
+          router.replace("/home");
+        }
+      } else {
+        Alert.alert("Error", data.error || "Credenciales incorrectas");
+      }
+    } catch (err) {
+      Alert.alert("Error", "No se pudo conectar al servidor");
+    }
+  };
 
   return (
     <LinearGradient colors={["#F5FAFE", "#265C8E"]} style={styles.gradient}>
@@ -57,7 +85,7 @@ export default function LoginScreen() {
             <Pressable
               style={[styles.loginButton, isDisabled && { opacity: 0.4 }]}
               disabled={isDisabled}
-              onPress={() => router.replace("/home")}
+              onPress={handleLogin}
             >
               <Text style={styles.loginButtonText}>Ingresar</Text>
             </Pressable>
@@ -83,6 +111,7 @@ const styles = StyleSheet.create({
   logoSection: { alignItems: "center", marginTop: 90, marginBottom: 50 },
   logo: { width: 110, height: 110, resizeMode: "contain" },
   appTitle: { fontSize: 26, fontWeight: "700", color: "#265C8E" },
+  formSection: {},
   input: {
     backgroundColor: "rgba(255,255,255,0.85)",
     borderRadius: 12,

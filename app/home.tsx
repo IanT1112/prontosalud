@@ -1,9 +1,28 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function Home() {
   const router = useRouter();
+  const [pacientes, setPacientes] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/pacientes`)
+      .then((res) => res.json())
+      .then((data) => setPacientes(data))
+      .catch(() => Alert.alert("Error", "No se pudo cargar los pacientes"));
+  }, []);
+
   return (
     <LinearGradient colors={["#F5FAFE", "#265C8E"]} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.container}>
@@ -18,17 +37,33 @@ export default function Home() {
           </LinearGradient>
         </Pressable>
 
-        {[1, 2, 3, 4, 5].map((i) => (
-          <View key={i} style={styles.card}>
-            <Text style={styles.name}>Usuario {i}</Text>
-            <Text>(Parentesco)</Text>
-            <Text>Edad: --</Text>
-            <Text>📞 --------</Text>
-          </View>
+        {pacientes.map((p: any) => (
+          <Pressable
+            key={p._id}
+            onPress={() =>
+              router.push({
+                pathname: "/person",
+                params: {
+                  id: p._id,
+                  name: p.nombre,
+                  age: p.edad,
+                  address: p.direccion,
+                  phone: p.telefono,
+                },
+              })
+            }
+          >
+            <View style={styles.card}>
+              <Text style={styles.name}>{p.nombre}</Text>
+              <Text>Edad: {p.edad}</Text>
+              <Text>📍 {p.direccion}</Text>
+              <Text>📞 {p.telefono}</Text>
+            </View>
+          </Pressable>
         ))}
 
         <LinearGradient colors={["#1E90FF", "#FFFFFF"]} style={styles.add}>
-          <Pressable>
+          <Pressable onPress={() => router.push("/register")}>
             <Text style={styles.addText}>Registrar usuario</Text>
           </Pressable>
         </LinearGradient>
@@ -63,7 +98,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
   },
-  name: { fontWeight: "700" },
+  name: { fontWeight: "700", marginBottom: 4 },
   add: {
     borderRadius: 16,
     padding: 16,
